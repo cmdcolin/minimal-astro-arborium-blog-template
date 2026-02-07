@@ -1,0 +1,21 @@
+body {
+  font-family: system-ui, sans-serif;
+  background-color: Canvas;
+  color: CanvasText;
+  color-scheme: light dark;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  line-height: 1.6;
+}
+
+img {
+  max-width: 100%;
+}
+
+pre {
+  max-width: 100%;
+  overflow: auto;
+  padding: 1em;
+  border-radius: 6px;
+}

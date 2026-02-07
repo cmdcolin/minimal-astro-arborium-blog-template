@@ -1,0 +1,32 @@
+---
+import Layout from '../../layouts/Layout.astro'
+
+export async function getStaticPaths() {
+  const postModules = import.meta.glob('/src/_posts/*.md', { eager: true })
+
+  return Object.entries(postModules).map(([path, module]) => {
+    const id = path.split('/').pop().replace('.md', '')
+    return {
+      params: { id },
+      props: {
+        title: module.frontmatter.title,
+        date: module.frontmatter.date.slice(0, 10),
+      },
+    }
+  })
+}
+
+const { id } = Astro.params
+const { title, date } = Astro.props
+
+const postModules = import.meta.glob('/src/_posts/*.md', { eager: true })
+const { default: Content } = postModules[`/src/_posts/${id}.md`]
+---
+
+<Layout title={title}>
+  <article>
+    <h1>{title}</h1>
+    <time>{date}</time>
+    <Content />
+  </article>
+</Layout>

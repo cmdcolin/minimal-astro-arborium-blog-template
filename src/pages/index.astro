@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro'
+
+const postModules = import.meta.glob('../_posts/*.md', { eager: true })
+const posts = Object.entries(postModules)
+  .map(([path, module]) => {
+    const filename = path.split('/').pop().replace('.md', '')
+    return {
+      frontmatter: module.frontmatter,
+      url: `${import.meta.env.BASE_URL}posts/${filename}/`,
+    }
+  })
+  .sort((a, b) => new Date(b.frontmatter.date).valueOf() - new Date(a.frontmatter.date).valueOf())
+---
+
+<Layout title="Blog">
+  <h1>Blog</h1>
+  <ul>
+    {posts.map(({ frontmatter, url }) => (
+      <li>
+        <a href={url}>
+          {frontmatter.date.slice(0, 10)} - {frontmatter.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+</Layout>
