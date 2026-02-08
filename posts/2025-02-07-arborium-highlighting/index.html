@@ -1,0 +1,264 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Replacing Shiki with Arborium for syntax highlighting</title><link rel="stylesheet" href="/_astro/Layout.Bx7YOccK.css"></head> <body> <nav> <a href="/">Home</a> </nav>  <article> <h1>Replacing Shiki with Arborium for syntax highlighting</h1> <time>2025-02-07</time> <p>I recently replaced the default Shiki syntax highlighter in my Astro blog with
+<a href="https://crates.io/crates/arborium-cli">arborium</a>, a tree-sitter based
+highlighter written in Rust.</p>
+<h2 id="why-switch">Why switch?</h2>
+<p>Shiki uses inline styles for coloring, which makes the HTML bulky and harder to
+theme. Arborium outputs lightweight custom HTML elements like <code>&#x3C;a-k></code> (keyword),
+<code>&#x3C;a-s></code> (string), and <code>&#x3C;a-v></code> (variable) that you style with CSS. This means:</p>
+<ul>
+<li>Smaller HTML output</li>
+<li>Easy light/dark theming via CSS variables and <code>prefers-color-scheme</code></li>
+<li>~70 languages supported out of the box via tree-sitter grammars</li>
+</ul>
+<h2 id="how-it-works">How it works</h2>
+<p>A rehype plugin runs <code>arborium --lang X --html</code> for each fenced code block at
+build time. The CLI reads source code from stdin and outputs HTML with custom
+elements. The plugin parses that into HAST nodes that Astro serializes into the
+final HTML.</p>
+<p>Here’s the core of the plugin:</p>
+<pre><code class="language-javascript"><a-k>function</a-k> <a-f>runArborium</a-f><a-p>(</a-p><a-v>lang</a-v><a-p>,</a-p> <a-v>code</a-v><a-p>)</a-p> <a-p>{</a-p>
+  <a-k>return</a-k> <a-k>new</a-k> <a-cr>Promise</a-cr><a-p>((</a-p><a-v>resolve</a-v><a-p>)</a-p> <a-o>=></a-o> <a-p>{</a-p>
+    <a-k>const</a-k> <a-v>child</a-v> <a-o>=</a-o> <a-f>execFile</a-f><a-p>(</a-p>
+      <a-s>'arborium'</a-s><a-p>,</a-p>
+      <a-p>[</a-p><a-s>'--lang'</a-s><a-p>,</a-p> <a-v>lang</a-v><a-p>,</a-p> <a-s>'--html'</a-s><a-p>],</a-p>
+      <a-p>(</a-p><a-v>err</a-v><a-p>,</a-p> <a-v>stdout</a-v><a-p>)</a-p> <a-o>=></a-o> <a-p>{</a-p>
+        <a-k>if</a-k> <a-p>(</a-p><a-v>err</a-v><a-p>)</a-p> <a-p>{</a-p>
+          <a-f>resolve</a-f><a-p>(</a-p><a-co>null</a-co><a-p>)</a-p>
+        <a-p>}</a-p> <a-k>else</a-k> <a-p>{</a-p>
+          <a-f>resolve</a-f><a-p>(</a-p><a-v>stdout</a-v><a-p>)</a-p>
+        <a-p>}</a-p>
+      <a-p>},</a-p>
+    <a-p>)</a-p>
+    <a-v>child</a-v><a-p>.</a-p><a-pr>stdin</a-pr><a-p>.</a-p><a-f>write</a-f><a-p>(</a-p><a-v>code</a-v><a-p>)</a-p>
+    <a-v>child</a-v><a-p>.</a-p><a-pr>stdin</a-pr><a-p>.</a-p><a-f>end</a-f><a-p>()</a-p>
+  <a-p>})</a-p>
+<a-p>}</a-p>
+</code></pre>
+<h2 id="language-showcase">Language showcase</h2>
+<h3 id="typescript">TypeScript</h3>
+<pre><code class="language-typescript"><a-k>interface</a-k> <a-t>User</a-t> <a-p>{</a-p>
+  <a-pr>name</a-pr>: <a-t>string</a-t>
+  <a-pr>email</a-pr>: <a-t>string</a-t>
+  <a-pr>roles</a-pr>: <a-k>readonly</a-k> <a-t>string</a-t><a-p>[]</a-p>
+<a-p>}</a-p>
+
+<a-k>function</a-k> <a-f>greet</a-f><a-p>(</a-p><a-v>user</a-v>: <a-t>User</a-t><a-p>)</a-p>: <a-t>string</a-t> <a-p>{</a-p>
+  <a-k>const</a-k> <a-p>{</a-p> name<a-p>,</a-p> roles <a-p>}</a-p> <a-o>=</a-o> <a-v>user</a-v>
+  <a-k>if</a-k> <a-p>(</a-p><a-v>roles</a-v><a-p>.</a-p><a-f>includes</a-f><a-p>(</a-p><a-s>'admin'</a-s><a-p>))</a-p> <a-p>{</a-p>
+    <a-k>return</a-k> <a-s>`Welcome back, </a-s><a-p>${</a-p><a-v>name</a-v><a-p>}</a-p><a-s>!`</a-s>
+  <a-p>}</a-p>
+  <a-k>return</a-k> <a-s>`Hello, </a-s><a-p>${</a-p><a-v>name</a-v><a-p>}</a-p><a-s>.`</a-s>
+<a-p>}</a-p>
+
+<a-k>const</a-k> <a-v>users</a-v>: <a-t>Map</a-t><a-p>&#x3C;</a-p><a-t>string</a-t><a-p>,</a-p> <a-t>User</a-t><a-p>></a-p> <a-o>=</a-o> <a-k>new</a-k> <a-t>Map</a-t><a-p>()</a-p>
+</code></pre>
+<h3 id="rust">Rust</h3>
+<pre><code class="language-rust"><a-k>use</a-k> std<a-p>::</a-p>collections<a-p>::</a-p><a-cr>HashMap</a-cr><a-p>;</a-p>
+
+<a-at>#</a-at><a-p>[</a-p><a-at>derive</a-at><a-p>(</a-p><a-cr>Debug</a-cr><a-p>)]</a-p>
+<a-k>struct</a-k> <a-t>Config</a-t> <a-p>{</a-p>
+    <a-pr>values</a-pr><a-p>:</a-p> <a-t>HashMap</a-t><a-p>&#x3C;</a-p><a-t>String</a-t><a-p>,</a-p> <a-t>String</a-t><a-p>>,</a-p>
+<a-p>}</a-p>
+
+<a-k>impl</a-k> <a-t>Config</a-t> <a-p>{</a-p>
+    <a-k>fn</a-k> <a-f>new</a-f><a-p>()</a-p> -> <a-t>Self</a-t> <a-p>{</a-p>
+        <a-t>Config</a-t> <a-p>{</a-p>
+            <a-pr>values</a-pr><a-p>:</a-p> <a-t>HashMap</a-t><a-p>::</a-p><a-f>new</a-f><a-p>(),</a-p>
+        <a-p>}</a-p>
+    <a-p>}</a-p>
+
+    <a-k>fn</a-k> <a-f>get</a-f><a-p>(</a-p><a-o>&#x26;</a-o><a-v>self</a-v><a-p>,</a-p> <a-v>key</a-v><a-p>:</a-p> <a-o>&#x26;</a-o><a-t>str</a-t><a-p>)</a-p> -> <a-t>Option</a-t><a-p>&#x3C;</a-p><a-o>&#x26;</a-o><a-t>str</a-t><a-p>></a-p> <a-p>{</a-p>
+        <a-v>self</a-v><a-p>.</a-p><a-pr>values</a-pr><a-p>.</a-p><a-f>get</a-f><a-p>(</a-p>key<a-p>).</a-p><a-f>map</a-f><a-p>(</a-p>|s| s<a-p>.</a-p><a-f>as_str</a-f><a-p>())</a-p>
+    <a-p>}</a-p>
+<a-p>}</a-p>
+
+<a-k>fn</a-k> <a-f>main</a-f><a-p>()</a-p> <a-p>{</a-p>
+    <a-k>let</a-k> <a-k>mut</a-k> config = <a-t>Config</a-t><a-p>::</a-p><a-f>new</a-f><a-p>();</a-p>
+    config<a-p>.</a-p><a-pr>values</a-pr><a-p>.</a-p><a-f>insert</a-f><a-p>(</a-p><a-s>"theme"</a-s><a-p>.</a-p><a-f>into</a-f><a-p>(),</a-p> <a-s>"dark"</a-s><a-p>.</a-p><a-f>into</a-f><a-p>());</a-p>
+
+    <a-k>match</a-k> config<a-p>.</a-p><a-f>get</a-f><a-p>(</a-p><a-s>"theme"</a-s><a-p>)</a-p> <a-p>{</a-p>
+        <a-cr>Some</a-cr><a-p>(</a-p>theme<a-p>)</a-p> => <a-m>println!</a-m><a-p>(</a-p><a-s>"Using theme: {theme}"</a-s><a-p>),</a-p>
+        <a-cr>None</a-cr> => <a-m>println!</a-m><a-p>(</a-p><a-s>"No theme set"</a-s><a-p>),</a-p>
+    <a-p>}</a-p>
+<a-p>}</a-p>
+</code></pre>
+<h3 id="python">Python</h3>
+<pre><code class="language-python"><a-k>from</a-k> <a-v>dataclasses</a-v> <a-k>import</a-k> <a-v>dataclass</a-v>
+<a-k>from</a-k> <a-v>typing</a-v> <a-k>import</a-k> <a-cr>Iterator</a-cr>
+
+<a-f>@dataclass</a-f>
+<a-k>class</a-k> <a-cr>Point</a-cr>:
+    <a-v>x</a-v>: <a-t>float</a-t>
+    <a-v>y</a-v>: <a-t>float</a-t>
+
+    <a-k>def</a-k> <a-f>distance_to</a-f>(<a-v>self</a-v>, <a-v>other</a-v>: <a-s>"Point"</a-s>) <a-o>-></a-o> <a-t>float</a-t>:
+        <a-k>return</a-k> ((<a-v>self</a-v>.<a-pr>x</a-pr> <a-o>-</a-o> <a-v>other</a-v>.<a-pr>x</a-pr>) <a-o>**</a-o> <a-n>2</a-n> <a-o>+</a-o> (<a-v>self</a-v>.<a-pr>y</a-pr> <a-o>-</a-o> <a-v>other</a-v>.<a-pr>y</a-pr>) <a-o>**</a-o> <a-n>2</a-n>) <a-o>**</a-o> <a-n>0.5</a-n>
+
+<a-k>def</a-k> <a-f>fibonacci</a-f>() <a-o>-></a-o> <a-cr>Iterator</a-cr>[<a-t>int</a-t>]:
+    <a-v>a</a-v>, <a-v>b</a-v> <a-o>=</a-o> <a-n>0</a-n>, <a-n>1</a-n>
+    <a-k>while</a-k> <a-co>True</a-co>:
+        <a-k>yield</a-k> <a-v>a</a-v>
+        <a-v>a</a-v>, <a-v>b</a-v> <a-o>=</a-o> <a-v>b</a-v>, <a-v>a</a-v> <a-o>+</a-o> <a-v>b</a-v>
+
+<a-v>points</a-v> <a-o>=</a-o> [<a-f>Point</a-f>(<a-v>i</a-v>, <a-v>i</a-v> <a-o>*</a-o> <a-n>2.5</a-n>) <a-k>for</a-k> <a-v>i</a-v> <a-o>in</a-o> <a-f>range</a-f>(<a-n>5</a-n>)]
+<a-k>for</a-k> <a-v>p</a-v> <a-o>in</a-o> <a-v>points</a-v>:
+    <a-f>print</a-f>(<a-s>f"</a-s><a-p>{</a-p><a-v>p</a-v><a-p>}</a-p><a-s> -> distance to origin: </a-s><a-p>{</a-p><a-v>p</a-v><a-eb>.</a-eb><a-pr>distance_to</a-pr><a-eb>(</a-eb><a-f>Point</a-f><a-eb>(</a-eb><a-n>0</a-n><a-eb>, </a-eb><a-n>0</a-n><a-eb>)):.2f</a-eb><a-p>}</a-p><a-s>"</a-s>)
+</code></pre>
+<h3 id="go">Go</h3>
+<pre><code class="language-go"><a-k>package</a-k> main
+
+<a-k>import</a-k> (
+	<a-s>"fmt"</a-s>
+	<a-s>"sync"</a-s>
+)
+
+<a-k>func</a-k> <a-v>worker</a-v>(<a-v>id</a-v> <a-t>int</a-t>, <a-v>jobs</a-v> <a-o>&#x3C;-</a-o><a-k>chan</a-k> <a-t>int</a-t>, <a-v>results</a-v> <a-k>chan</a-k><a-o>&#x3C;-</a-o> <a-t>int</a-t>, <a-v>wg</a-v> <a-o>*</a-o>sync.<a-t>WaitGroup</a-t>) {
+	<a-k>defer</a-k> <a-v>wg</a-v>.<a-pr>Done</a-pr>()
+	<a-k>for</a-k> <a-v>j</a-v> <a-o>:=</a-o> <a-k>range</a-k> <a-v>jobs</a-v> {
+		<a-v>fmt</a-v>.<a-pr>Printf</a-pr>(<a-s>"worker %d processing job %d\n"</a-s>, <a-v>id</a-v>, <a-v>j</a-v>)
+		<a-v>results</a-v> <a-o>&#x3C;-</a-o> <a-v>j</a-v> <a-o>*</a-o> <a-n>2</a-n>
+	}
+}
+
+<a-k>func</a-k> <a-v>main</a-v>() {
+	<a-v>jobs</a-v> <a-o>:=</a-o> <a-v>make</a-v>(<a-k>chan</a-k> <a-t>int</a-t>, <a-n>100</a-n>)
+	<a-v>results</a-v> <a-o>:=</a-o> <a-v>make</a-v>(<a-k>chan</a-k> <a-t>int</a-t>, <a-n>100</a-n>)
+
+	<a-k>var</a-k> <a-v>wg</a-v> sync.<a-t>WaitGroup</a-t>
+	<a-k>for</a-k> <a-v>w</a-v> <a-o>:=</a-o> <a-n>1</a-n>; <a-v>w</a-v> <a-o>&#x3C;=</a-o> <a-n>3</a-n>; <a-v>w</a-v><a-o>++</a-o> {
+		<a-v>wg</a-v>.<a-pr>Add</a-pr>(<a-n>1</a-n>)
+		<a-k>go</a-k> <a-v>worker</a-v>(<a-v>w</a-v>, <a-v>jobs</a-v>, <a-v>results</a-v>, <a-o>&#x26;</a-o><a-v>wg</a-v>)
+	}
+
+	<a-k>for</a-k> <a-v>j</a-v> <a-o>:=</a-o> <a-n>1</a-n>; <a-v>j</a-v> <a-o>&#x3C;=</a-o> <a-n>5</a-n>; <a-v>j</a-v><a-o>++</a-o> {
+		<a-v>jobs</a-v> <a-o>&#x3C;-</a-o> <a-v>j</a-v>
+	}
+	<a-v>close</a-v>(<a-v>jobs</a-v>)
+
+	<a-v>wg</a-v>.<a-pr>Wait</a-pr>()
+	<a-v>close</a-v>(<a-v>results</a-v>)
+}
+</code></pre>
+<h3 id="html">HTML</h3>
+<pre><code class="language-html"><a-co>&#x3C;!doctype html</a-co><a-p>></a-p>
+<a-p>&#x3C;</a-p><a-tg>html</a-tg> <a-at>lang</a-at>="<a-s>en</a-s>"<a-p>></a-p>
+  <a-p>&#x3C;</a-p><a-tg>head</a-tg><a-p>></a-p>
+    <a-p>&#x3C;</a-p><a-tg>meta</a-tg> <a-at>charset</a-at>="<a-s>UTF-8</a-s>" <a-p>/></a-p>
+    <a-p>&#x3C;</a-p><a-tg>title</a-tg><a-p>></a-p>Example<a-p>&#x3C;/</a-p><a-tg>title</a-tg><a-p>></a-p>
+    <a-p>&#x3C;</a-p><a-tg>style</a-tg><a-p>></a-p>
+      <a-tg>body</a-tg> <a-p>{</a-p>
+        <a-pr>font-family</a-pr><a-p>:</a-p> system-ui<a-p>,</a-p> sans-serif<a-p>;</a-p>
+        <a-pr>color-scheme</a-pr><a-p>:</a-p> light dark<a-p>;</a-p>
+      <a-p>}</a-p>
+    <a-p>&#x3C;/</a-p><a-tg>style</a-tg><a-p>></a-p>
+  <a-p>&#x3C;/</a-p><a-tg>head</a-tg><a-p>></a-p>
+  <a-p>&#x3C;</a-p><a-tg>body</a-tg><a-p>></a-p>
+    <a-p>&#x3C;</a-p><a-tg>h1</a-tg><a-p>></a-p>Hello<a-p>&#x3C;/</a-p><a-tg>h1</a-tg><a-p>></a-p>
+    <a-p>&#x3C;</a-p><a-tg>script</a-tg><a-p>></a-p>
+      <a-v>document</a-v><a-p>.</a-p><a-f>querySelector</a-f><a-p>(</a-p><a-s>'h1'</a-s><a-p>).</a-p><a-f>addEventListener</a-f><a-p>(</a-p><a-s>'click'</a-s><a-p>,</a-p> <a-p>()</a-p> <a-o>=></a-o> <a-p>{</a-p>
+        <a-f>alert</a-f><a-p>(</a-p><a-s>'clicked!'</a-s><a-p>)</a-p>
+      <a-p>})</a-p>
+    <a-p>&#x3C;/</a-p><a-tg>script</a-tg><a-p>></a-p>
+  <a-p>&#x3C;/</a-p><a-tg>body</a-tg><a-p>></a-p>
+<a-p>&#x3C;/</a-p><a-tg>html</a-tg><a-p>></a-p>
+</code></pre>
+<h3 id="yaml">YAML</h3>
+<pre><code class="language-yaml"><a-pr>services</a-pr><a-p>:</a-p>
+  <a-pr>web</a-pr><a-p>:</a-p>
+    <a-pr>image</a-pr><a-p>:</a-p> <a-s>nginx:alpine</a-s>
+    <a-pr>ports</a-pr><a-p>:</a-p>
+      <a-p>-</a-p> <a-s>'8080:80'</a-s>
+    <a-pr>volumes</a-pr><a-p>:</a-p>
+      <a-p>-</a-p> <a-s>./html:/usr/share/nginx/html:ro</a-s>
+    <a-pr>environment</a-pr><a-p>:</a-p>
+      <a-pr>NGINX_HOST</a-pr><a-p>:</a-p> <a-s>example.com</a-s>
+      <a-pr>NGINX_PORT</a-pr><a-p>:</a-p> <a-n>80</a-n>
+    <a-pr>deploy</a-pr><a-p>:</a-p>
+      <a-pr>replicas</a-pr><a-p>:</a-p> <a-n>3</a-n>
+      <a-pr>restart_policy</a-pr><a-p>:</a-p>
+        <a-pr>condition</a-pr><a-p>:</a-p> <a-s>on-failure</a-s>
+</code></pre>
+<h3 id="bash">Bash</h3>
+<pre><code class="language-bash"><a-c>#!/bin/bash</a-c>
+<a-f>set</a-f> <a-co>-euo</a-co> pipefail
+
+readonly <a-pr>LOG_DIR</a-pr>=<a-s>"/var/log/myapp"</a-s>
+
+<a-f>rotate_logs</a-f>() {
+  local <a-pr>max_size</a-pr>=$((10 * 1024 * 1024))
+  <a-k>for</a-k> <a-pr>log</a-pr> <a-k>in</a-k> <a-s>"</a-s><a-o>$</a-o><a-pr>LOG_DIR</a-pr><a-s>"</a-s>/*.log; <a-k>do</a-k>
+    <a-k>if</a-k> [[ <a-eb>$(</a-eb><a-f>stat</a-f><a-eb> </a-eb><a-co>-f%z</a-co><a-eb> </a-eb><a-s>"</a-s><a-o>$</a-o><a-pr>log</a-pr><a-s>"</a-s><a-eb> </a-eb><a-n>2</a-n><a-o>></a-o><a-eb>/dev/null || </a-eb><a-f>stat</a-f><a-eb> </a-eb><a-co>-c%s</a-co><a-eb> </a-eb><a-s>"</a-s><a-o>$</a-o><a-pr>log</a-pr><a-s>"</a-s><a-eb>)</a-eb> -gt <a-o>$</a-o><a-pr>max_size</a-pr> ]]; <a-k>then</a-k>
+      <a-f>mv</a-f> <a-s>"</a-s><a-o>$</a-o><a-pr>log</a-pr><a-s>"</a-s> <a-s>"</a-s><a-eb>${</a-eb><a-pr>log</a-pr><a-eb>}</a-eb><a-s>.</a-s><a-eb>$(</a-eb><a-f>date</a-f><a-eb> +%Y%m%d%H%M%S)</a-eb><a-s>.bak"</a-s>
+      <a-f>echo</a-f> <a-s>"Rotated: </a-s><a-o>$</a-o><a-pr>log</a-pr><a-s>"</a-s>
+    <a-k>fi</a-k>
+  <a-k>done</a-k>
+}
+
+<a-f>rotate_logs</a-f>
+<a-f>echo</a-f> <a-s>"Done at </a-s><a-eb>$(</a-eb><a-f>date</a-f><a-eb>)</a-eb><a-s>"</a-s>
+</code></pre>
+<h3 id="css">CSS</h3>
+<pre><code class="language-css"><a-p>:</a-p><a-at>root</a-at> <a-p>{</a-p>
+  <a-pr>--bg</a-pr><a-p>:</a-p> <a-p>#</a-p><a-s>ffffff</a-s><a-p>;</a-p>
+  <a-pr>--fg</a-pr><a-p>:</a-p> <a-p>#</a-p><a-s>1a1a1a</a-s><a-p>;</a-p>
+  <a-pr>--accent</a-pr><a-p>:</a-p> <a-p>#</a-p><a-s>0055ff</a-s><a-p>;</a-p>
+<a-p>}</a-p>
+
+<a-k>@media</a-k> <a-p>(</a-p><a-pr>prefers-color-scheme</a-pr><a-p>:</a-p> dark<a-p>)</a-p> <a-p>{</a-p>
+  <a-p>:</a-p><a-at>root</a-at> <a-p>{</a-p>
+    <a-pr>--bg</a-pr><a-p>:</a-p> <a-p>#</a-p><a-s>0d1117</a-s><a-p>;</a-p>
+    <a-pr>--fg</a-pr><a-p>:</a-p> <a-p>#</a-p><a-s>e6edf3</a-s><a-p>;</a-p>
+    <a-pr>--accent</a-pr><a-p>:</a-p> <a-p>#</a-p><a-s>58a6ff</a-s><a-p>;</a-p>
+  <a-p>}</a-p>
+<a-p>}</a-p>
+
+<a-p>.</a-p><a-pr>card</a-pr> <a-p>{</a-p>
+  <a-pr>background</a-pr><a-p>:</a-p> <a-f>var</a-f><a-p>(</a-p><a-v>--bg</a-v><a-p>);</a-p>
+  <a-pr>color</a-pr><a-p>:</a-p> <a-f>var</a-f><a-p>(</a-p><a-v>--fg</a-v><a-p>);</a-p>
+  <a-pr>border</a-pr><a-p>:</a-p> <a-n>1</a-n><a-t>px</a-t> solid <a-f>color-mix</a-f><a-p>(</a-p>in srgb<a-p>,</a-p> <a-f>var</a-f><a-p>(</a-p><a-v>--fg</a-v><a-p>)</a-p> <a-n>20</a-n><a-t>%</a-t><a-p>,</a-p> transparent<a-p>);</a-p>
+  <a-pr>border-radius</a-pr><a-p>:</a-p> <a-n>8</a-n><a-t>px</a-t><a-p>;</a-p>
+  <a-pr>padding</a-pr><a-p>:</a-p> <a-n>1.5</a-n><a-t>rem</a-t><a-p>;</a-p>
+
+  <a-tg>&#x26;</a-tg> <a-tg>h2</a-tg> <a-p>{</a-p>
+    <a-pr>color</a-pr><a-p>:</a-p> <a-f>var</a-f><a-p>(</a-p><a-v>--accent</a-v><a-p>);</a-p>
+    <a-pr>margin</a-pr><a-p>:</a-p> <a-n>0</a-n> <a-n>0</a-n> <a-n>0.5</a-n><a-t>rem</a-t><a-p>;</a-p>
+  <a-p>}</a-p>
+
+  <a-tg>&#x26;</a-tg><a-p>:</a-p><a-at>hover</a-at> <a-p>{</a-p>
+    <a-pr>box-shadow</a-pr><a-p>:</a-p> <a-n>0</a-n> <a-n>4</a-n><a-t>px</a-t> <a-n>12</a-n><a-t>px</a-t> <a-f>rgb</a-f><a-p>(</a-p><a-n>0</a-n> <a-n>0</a-n> <a-n>0</a-n> <a-o>/</a-o> <a-n>0.1</a-n><a-p>);</a-p>
+  <a-p>}</a-p>
+<a-p>}</a-p>
+</code></pre>
+<h3 id="json">JSON</h3>
+<pre><code class="language-json">{
+  <a-s>"name"</a-s>: <a-s>"my-project"</a-s>,
+  <a-s>"version"</a-s>: <a-s>"1.0.0"</a-s>,
+  <a-s>"dependencies"</a-s>: {
+    <a-s>"astro"</a-s>: <a-s>"^6.0.0"</a-s>,
+    <a-s>"hast-util-to-string"</a-s>: <a-s>"^3.0.1"</a-s>,
+    <a-s>"unist-util-visit"</a-s>: <a-s>"^5.1.0"</a-s>
+  },
+  <a-s>"scripts"</a-s>: {
+    <a-s>"dev"</a-s>: <a-s>"astro dev"</a-s>,
+    <a-s>"build"</a-s>: <a-s>"astro build"</a-s>
+  }
+}
+</code></pre>
+<h3 id="toml">TOML</h3>
+<pre><code class="language-toml"><a-p>[</a-p><a-pr>package</a-pr><a-p>]</a-p>
+<a-pr>name</a-pr> <a-o>=</a-o> <a-s>"arborium-cli"</a-s>
+<a-pr>version</a-pr> <a-o>=</a-o> <a-s>"0.1.0"</a-s>
+<a-pr>edition</a-pr> <a-o>=</a-o> <a-s>"2021"</a-s>
+
+<a-p>[</a-p><a-pr>dependencies</a-pr><a-p>]</a-p>
+<a-pr>arborium</a-pr> <a-o>=</a-o> <a-p>{</a-p> <a-pr>version</a-pr> <a-o>=</a-o> <a-s>"2.12"</a-s><a-p>,</a-p> <a-pr>features</a-pr> <a-o>=</a-o> <a-p>[</a-p><a-s>"cli"</a-s><a-p>]</a-p> <a-p>}</a-p>
+<a-pr>clap</a-pr> <a-o>=</a-o> <a-p>{</a-p> <a-pr>version</a-pr> <a-o>=</a-o> <a-s>"4"</a-s><a-p>,</a-p> <a-pr>features</a-pr> <a-o>=</a-o> <a-p>[</a-p><a-s>"derive"</a-s><a-p>]</a-p> <a-p>}</a-p>
+
+<a-p>[[</a-p><a-pr>bin</a-pr><a-p>]]</a-p>
+<a-pr>name</a-pr> <a-o>=</a-o> <a-s>"arborium"</a-s>
+<a-pr>path</a-pr> <a-o>=</a-o> <a-s>"src/main.rs"</a-s>
+</code></pre>
+<h2 id="setup">Setup</h2>
+<p>Install the CLI with <code>cargo install arborium-cli</code>, disable Shiki in your Astro
+config, and register the rehype plugin. The full template is on
+<a href="https://github.com/cmdcolin/minimal-astro-arborium-blog-template">GitHub</a>.</p> </article>  </body></html>

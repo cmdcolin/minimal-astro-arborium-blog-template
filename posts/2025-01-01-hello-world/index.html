@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Hello World</title><link rel="stylesheet" href="/_astro/Layout.Bx7YOccK.css"></head> <body> <nav> <a href="/">Home</a> </nav>  <article> <h1>Hello World</h1> <time>2025-01-01</time> <p>Welcome to the blog! Here are some code examples.</p>
+<h2 id="javascript">JavaScript</h2>
+<pre><code class="language-javascript"><a-k>import</a-k> <a-v>express</a-v> <a-k>from</a-k> <a-s>'express'</a-s>
+
+<a-k>const</a-k> <a-v>app</a-v> <a-o>=</a-o> <a-f>express</a-f><a-p>()</a-p>
+
+<a-v>app</a-v><a-p>.</a-p><a-f>get</a-f><a-p>(</a-p><a-s>'/'</a-s><a-p>,</a-p> <a-p>(</a-p><a-v>req</a-v><a-p>,</a-p> <a-v>res</a-v><a-p>)</a-p> <a-o>=></a-o> <a-p>{</a-p>
+  <a-v>res</a-v><a-p>.</a-p><a-f>json</a-f><a-p>({</a-p> <a-pr>message</a-pr>: <a-s>'Hello World'</a-s> <a-p>})</a-p>
+<a-p>})</a-p>
+
+<a-v>app</a-v><a-p>.</a-p><a-f>listen</a-f><a-p>(</a-p><a-n>3000</a-n><a-p>)</a-p>
+</code></pre>
+<h2 id="python">Python</h2>
+<pre><code class="language-python"><a-k>def</a-k> <a-f>fibonacci</a-f>(<a-v>n</a-v>):
+    <a-k>if</a-k> <a-v>n</a-v> <a-o>&#x3C;=</a-o> <a-n>1</a-n>:
+        <a-k>return</a-k> <a-v>n</a-v>
+    <a-k>return</a-k> <a-f>fibonacci</a-f>(<a-v>n</a-v> <a-o>-</a-o> <a-n>1</a-n>) <a-o>+</a-o> <a-f>fibonacci</a-f>(<a-v>n</a-v> <a-o>-</a-o> <a-n>2</a-n>)
+
+<a-k>for</a-k> <a-v>i</a-v> <a-o>in</a-o> <a-f>range</a-f>(<a-n>10</a-n>):
+    <a-f>print</a-f>(<a-f>fibonacci</a-f>(<a-v>i</a-v>))
+</code></pre>
+<h2 id="rust">Rust</h2>
+<pre><code class="language-rust"><a-k>fn</a-k> <a-f>main</a-f><a-p>()</a-p> <a-p>{</a-p>
+    <a-k>let</a-k> numbers<a-p>:</a-p> <a-t>Vec</a-t><a-p>&#x3C;</a-p><a-t>i32</a-t><a-p>></a-p> = <a-p>(</a-p><a-co>1</a-co>..=<a-co>10</a-co><a-p>).</a-p><a-f>collect</a-f><a-p>();</a-p>
+    <a-k>let</a-k> sum<a-p>:</a-p> <a-t>i32</a-t> = numbers<a-p>.</a-p><a-f>iter</a-f><a-p>().</a-p><a-f>sum</a-f><a-p>();</a-p>
+    <a-m>println!</a-m><a-p>(</a-p><a-s>"Sum: {}"</a-s><a-p>,</a-p> sum<a-p>);</a-p>
+<a-p>}</a-p>
+</code></pre>
+<h2 id="bash">Bash</h2>
+<pre><code class="language-bash"><a-c>#!/bin/bash</a-c>
+<a-k>for</a-k> <a-pr>file</a-pr> <a-k>in</a-k> *.txt; <a-k>do</a-k>
+  <a-f>echo</a-f> <a-s>"Processing </a-s><a-o>$</a-o><a-pr>file</a-pr><a-s>"</a-s>
+  <a-f>wc</a-f> <a-co>-l</a-co> <a-s>"</a-s><a-o>$</a-o><a-pr>file</a-pr><a-s>"</a-s>
+<a-k>done</a-k>
+</code></pre>
+<p>That’s it for now!</p> </article>  </body></html>
